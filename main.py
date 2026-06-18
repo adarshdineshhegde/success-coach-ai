@@ -28,17 +28,24 @@ st.set_page_config(
 
 st.title("Success Coach AI")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Store separate chat histories for each student
+if "student_chats" not in st.session_state:
+    st.session_state.student_chats = {}
 
-for msg in st.session_state.messages:
+if selected_student_id not in st.session_state.student_chats:
+    st.session_state.student_chats[selected_student_id] = []
 
+messages = st.session_state.student_chats[selected_student_id]
+
+# Render chat history for currently selected student
+for msg in messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+# New user message
 if prompt := st.chat_input("Ask your coach anything..."):
 
-    st.session_state.messages.append(
+    messages.append(
         {
             "role": "user",
             "content": prompt
@@ -49,10 +56,11 @@ if prompt := st.chat_input("Ask your coach anything..."):
         st.markdown(prompt)
 
     response = get_response(
-    prompt,
-    selected_student_id)
+        prompt,
+        selected_student_id
+    )
 
-    st.session_state.messages.append(
+    messages.append(
         {
             "role": "assistant",
             "content": response
