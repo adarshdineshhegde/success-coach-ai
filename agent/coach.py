@@ -1,6 +1,6 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
-from data.student_data import STUDENT, get_student_context
+from data.student_data import load_student, get_student_context
 from knowledge_base.vectorstore import retrieve
 
 llm = ChatOpenAI(
@@ -25,9 +25,14 @@ Rules:
 - Do not invent platform features or processes.
 """
 
-def get_response(user_message: str) -> str:
+def get_response(
+    user_message: str,
+    student_id: str
+) -> str:
 
-    student_context = get_student_context(STUDENT)
+    student = load_student(student_id)
+
+    student_context = get_student_context(student)
 
     kb_context = retrieve(user_message)
 

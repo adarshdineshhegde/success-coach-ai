@@ -1,37 +1,93 @@
-# Mock student record — in later phases this comes from Google Sheets
-STUDENT = {
-    "name": "Ravi Kumar",
-    "student_id": "S1042",
-    "subjects": {
-        "Python": 72,
-        "Web Dev": 58,       # flagged — below 60
-        "DSA": 65,
-        "SQL": 80,
-    },
-    "attendance": 67,        # flagged — below 75%
-    "upcoming_exams": [
-        {"subject": "Web Dev", "date": "2025-06-25"},
-        {"subject": "DSA",     "date": "2025-07-02"},
-    ],
-    "growth_cycle": "GC-4",
-    "growth_cycle_progress": 45,
-}
+from data.sheets_client import get_spreadsheet
+
+STUDENT_ID = "STU002"
+
+def get_all_students():
+    spreadsheet = get_spreadsheet()
+
+    roster = spreadsheet.worksheet("roster")
+
+    return roster.get_all_records()
+
+def load_student(student_id: str):
+
+    spreadsheet = get_spreadsheet()
+
+    roster_ws = spreadsheet.worksheet("roster")
+    scores_ws = spreadsheet.worksheet("exam_scores")
+    attendance_ws = spreadsheet.worksheet("attendance")
+    exams_ws = spreadsheet.worksheet("exam_schedule")
+
+    roster_rows = roster_ws.get_all_records()
+    score_rows = scores_ws.get_all_records()
+    attendance_rows = attendance_ws.get_all_records()
+    exam_rows = exams_ws.get_all_records()
+
+    roster_record = next(
+        row for row in roster_rows
+        if row["student_id"] == student_id
+    )
+
+    student_scores = {
+        row["subject"]: row["score"]
+        for row in score_rows
+        if row["student_id"] == student_id
+    }
+
+    student_attendance = [
+        row["attendance_pct"]
+        for row in attendance_rows
+        if row["student_id"] == student_id
+    ]
+
+    avg_attendance = (
+        sum(student_attendance) / len(student_attendance)
+        if student_attendance else 0
+    )
+
+    upcoming_exams = [
+        {
+            "subject": row["subject"],
+            "date": row["exam_date"]
+        }
+        for row in exam_rows
+        if row["student_id"] == student_id
+    ]
+
+    return {
+        "name": roster_record["name"],
+        "student_id": student_id,
+        "program": roster_record["program"],
+        "cohort": roster_record["cohort"],
+        "subjects": student_scores,
+        "attendance": round(avg_attendance, 1),
+        "upcoming_exams": upcoming_exams,
+    }
 
 def get_student_context(student: dict) -> str:
-    """Convert student dict to a clean string for injection into the prompt."""
-    low_scores = {s: v for s, v in student["subjects"].items() if v < 60}
-    exams = ", ".join(
-        f"{e['subject']} on {e['date']}" for e in student["upcoming_exams"]
-    )
-    context = f"""
-STUDENT PROFILE:
-- Name: {student['name']}
-- Current Growth Cycle: {student['growth_cycle']} ({student['growth_cycle_progress']}% complete)
-- Attendance: {student['attendance']}% {"⚠ BELOW 75%" if student['attendance'] < 75 else ""}
-- Subject scores: {student['subjects']}
-- Subjects needing attention (below 60): {low_scores if low_scores else "None"}
-- Upcoming exams: {exams}
-"""
-    return context
 
-#Here , thhis function converts the dict data of a student into a string format that can be easily injected into the prompt for the AI model. It highlights key information such as low scores, attendance, and upcoming exams, which can help the AI provide more personalized and actionable advice to the student.
+    low_scores = {
+        subject: score
+        for subject, score in student["subjects"].items()
+        if score < 60
+    }
+
+    exams = ", ".join(
+        f"{exam['subject']} on {exam['date']}"
+        for exam in student["upcoming_exams"]
+    )
+
+    return f"""
+STUDENT PROFILE:
+
+- Name: {student['name']}
+- Student ID: {student['student_id']}
+- Program: {student['program']}
+- Cohort: {student['cohort']}
+- Attendance: {student['attendance']}%
+- Subject Scores: {student['subjects']}
+- Subjects Needing Attention: {low_scores if low_scores else 'None'}
+- Upcoming Exams: {exams}
+"""
+
+STUDENT = load_student(STUDENT_ID)
