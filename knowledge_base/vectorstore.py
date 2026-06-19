@@ -2,6 +2,7 @@ from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
+import os
 
 CHROMA_PATH = "./chroma_db"
 DOCS_PATH = "./knowledge_base/docs"
@@ -39,7 +40,11 @@ def build_vectorstore():
 
 
 def load_vectorstore():
-    """Load existing ChromaDB."""
+    """Load existing ChromaDB. Build it if missing."""
+
+    if not os.path.exists(CHROMA_PATH):
+        print("Chroma DB not found. Building vectorstore...")
+        build_vectorstore()
 
     embeddings = OpenAIEmbeddings(
         model="text-embedding-3-small"
