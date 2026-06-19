@@ -92,7 +92,7 @@ try:
                 f"Session {idx}"
             ):
 
-                for msg in session["messages"]:
+                for msg in session:
 
                     role = msg["role"]
 
@@ -113,7 +113,7 @@ try:
                 ):
                     st.session_state.student_chats[
                         selected_student_id
-                    ] = session["messages"].copy()
+                    ] = session.copy()
 
                     st.rerun()
 
