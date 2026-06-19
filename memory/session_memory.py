@@ -1,5 +1,6 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from memory.signals import generate_and_store_signals
 
 from memory.mem0_client import client
 
@@ -86,3 +87,17 @@ def get_session_records(student_id):
     )
 
     return results
+
+def end_session(student_id: str, student_name: str, messages: list) -> tuple:
+    # 1. summarize
+    summary = summarize_session(messages)
+    
+    # 2. store summary
+    store_session_summary(student_id, summary)
+    
+    # 3. extract and store signals
+    signals = generate_and_store_signals(student_id, student_name, summary)
+    
+    return summary, signals
+
+ 

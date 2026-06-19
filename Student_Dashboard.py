@@ -10,6 +10,7 @@ from data.student_data import (
 from memory.session_memory import (
     summarize_session,
     store_session_summary,
+    end_session,                  # ← add this
 )
 
 from storage.session_store import (
@@ -17,10 +18,7 @@ from storage.session_store import (
     get_sessions
 )
 
-st.set_page_config(
-    page_title="Success Coach",
-    layout="centered"
-)
+st.set_page_config(page_title="Student Dashboard", page_icon="🎓", layout="centered")
 
 load_dotenv()
 
@@ -139,7 +137,6 @@ from agent.coach import get_response
 
 st.title("Success Coach AI")
 
-# Store separate chat histories for each student
 if "student_chats" not in st.session_state:
     st.session_state.student_chats = {}
 
@@ -169,12 +166,10 @@ Ask me anything about:
 """
     )
 
-# Render chat history for currently selected student
 for msg in messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# New user message
 if prompt := st.chat_input("Ask your coach anything..."):
 
     messages.append(
@@ -209,26 +204,25 @@ if messages:
         with st.spinner("Saving session..."):
 
             save_session(
-            selected_student_id,
-            messages
+                selected_student_id,
+                messages
             )
 
-            store_facts_from_conversation(
+            # ↓ replaces the three separate calls you had before
+            summary, signals = end_session(
                 student_id=selected_student_id,
+                student_name=student["name"],
                 messages=messages
             )
 
-            summary = summarize_session(messages)
-
-            store_session_summary(
-                student_id=selected_student_id,
-                summary=summary
+        # ↓ show signal count if any were flagged
+        if signals:
+            st.warning(
+                f"Session saved. {len(signals)} concern(s) flagged for coach review."
             )
+        else:
+            st.success("Session saved. No concerns flagged.")
 
-        st.success("Session saved successfully!")
-
-        # Clear only this student's chat history
         st.session_state.student_chats[selected_student_id] = []
 
         st.rerun()
-    

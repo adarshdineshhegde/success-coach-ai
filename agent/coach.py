@@ -6,7 +6,8 @@ from agent.tools import (
     search_knowledge_base,
     get_student_memory,
     get_past_sessions,
-    set_student_id
+    set_student_id,
+    get_all_signals_tool, 
 )
 
 import langchain
@@ -42,7 +43,8 @@ tools = [
     get_student_data,
     search_knowledge_base,
     get_student_memory,
-    get_past_sessions
+    get_past_sessions,
+    get_all_signals_tool
 ]
 
 agent = create_agent(

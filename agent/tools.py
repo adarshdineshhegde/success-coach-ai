@@ -58,3 +58,28 @@ def get_past_sessions(query: str) -> str:
     Input: what you're looking for in past sessions.
     """
     return get_session_summaries(_current_student_id)
+
+from data.student_data import get_all_students
+from memory.signals import get_all_signals as _get_all_signals
+
+@tool
+def get_all_signals_tool(query: str) -> str:
+    """
+    Retrieve all flagged concern signals across all students.
+    Use this when the coach asks who needs attention today,
+    which students have urgent concerns, or requests a daily plan.
+    Input: what you're looking for (e.g. 'urgent concerns today')
+    """
+    students = get_all_students()
+    signals  = _get_all_signals(students)
+
+    if not signals:
+        return "No signals flagged across any students."
+
+    lines = []
+    for s in signals:
+        lines.append(
+            f"[{s['severity'].upper()} / {s['urgency']}] "
+            f"{s['student_name']} ({s['student_id']}): {s['concern']}"
+        )
+    return "\n".join(lines)
