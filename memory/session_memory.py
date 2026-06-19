@@ -55,3 +55,21 @@ def store_session_summary(student_id, summary):
     )
 
     return result
+
+def get_session_summaries(student_id: str) -> str:
+
+    results = client.search(
+        query="session summary",
+        user_id=student_id,
+        limit=3
+    )
+
+    if not results:
+        return "No previous sessions."
+
+    summaries = []
+
+    for item in results:
+        summaries.append(item["memory"])
+
+    return "\n\n---\n\n".join(summaries)

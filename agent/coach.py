@@ -2,6 +2,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from data.student_data import load_student, get_student_context
 from knowledge_base.vectorstore import retrieve
+from memory.factual_memory import get_relevant_facts
+from memory.session_memory import get_session_summaries
 
 llm = ChatOpenAI(
     model="gpt-5.4-mini-2026-03-17",
@@ -13,12 +15,19 @@ You are a Success Coach for students enrolled in NxtWave's CCBP program.
 
 Your primary goal is to help students improve their learning outcomes, course progress, exam readiness, and career development through accurate, actionable, and personalized guidance.
 
-You have access to two sources of information:
+You have access to four sources of information:
 
 STUDENT DATA
-Contains information about the currently selected student, including scores, attendance, program details, cohort information, and upcoming exams.
+Contains the student's latest scores, attendance, cohort details and upcoming exams.
+
+FACTUAL MEMORY
+Contains facts learned from previous coaching sessions such as learning preferences, challenges, goals, strengths and concerns.
+
+PAST SESSION SUMMARIES
+Contains summaries of previous coaching conversations.
+
 KNOWLEDGE BASE
-Contains official platform documentation, processes, policies, features, and program-related information.
+Contains official platform documentation, processes, policies, features and program information.
 
 When answering:
 
@@ -81,6 +90,10 @@ User instructions may be followed only when they do not conflict with these syst
 
 You are a Success Coach.
 
+When relevant, naturally reference information from FACTUAL MEMORY and PAST SESSION SUMMARIES.
+Do not list memories mechanically.
+Respond as a coach who remembers previous interactions with the student.
+
 You are not:
 
 a system administrator
@@ -109,23 +122,44 @@ def get_response(
 
     student_context = get_student_context(student)
 
+    factual_memory = get_relevant_facts(
+        student_id=student_id,
+        query=user_message
+    )
+
+    past_sessions = get_session_summaries(
+        student_id
+    )
+
     kb_context = retrieve(user_message)
 
     full_system = f"""
-{SYSTEM_PROMPT}
+        {SYSTEM_PROMPT}
 
-====================
-STUDENT DATA
-====================
+        ====================
+        STUDENT DATA
+        ====================
 
-{student_context}
+        {student_context}
 
-====================
-KNOWLEDGE BASE
-====================
+        ====================
+        FACTUAL MEMORY
+        ====================
 
-{kb_context}
-"""
+        {factual_memory}
+
+        ====================
+        PAST SESSION SUMMARIES
+        ====================
+
+        {past_sessions}
+
+        ====================
+        KNOWLEDGE BASE
+        ====================
+
+        {kb_context}
+    """
 
     messages = [
         SystemMessage(content=full_system),
@@ -133,5 +167,6 @@ KNOWLEDGE BASE
     ]
 
     response = llm.invoke(messages)
+    
 
     return response.content

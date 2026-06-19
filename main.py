@@ -1,6 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 from data.student_data import get_all_students
+from memory.factual_memory import store_facts_from_conversation
 from memory.session_memory import (
     summarize_session,
     store_session_summary
@@ -79,6 +80,11 @@ if messages:
     if st.button("End Session & Save"):
 
         with st.spinner("Saving session..."):
+
+            store_facts_from_conversation(
+                student_id=selected_student_id,
+                messages=messages
+            )
 
             summary = summarize_session(messages)
 
