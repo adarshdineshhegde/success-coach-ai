@@ -62,6 +62,7 @@ langsmith==0.8.16
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
+mem0ai==0.1.116
 mmh3==5.2.1
 multidict==6.7.1
 narwhals==2.22.1
@@ -82,7 +83,7 @@ packaging==26.2
 pandas==3.0.3
 pillow==12.2.0
 propcache==0.5.2
-protobuf==6.33.6
+protobuf>=5.29.0,<6.0.0
 pyarrow==24.0.0
 pyasn1==0.6.3
 pyasn1_modules==0.4.2

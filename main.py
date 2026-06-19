@@ -1,6 +1,10 @@
 import streamlit as st
 from dotenv import load_dotenv
 from data.student_data import get_all_students
+from memory.session_memory import (
+    summarize_session,
+    store_session_summary
+)
 
 load_dotenv()
 
@@ -69,3 +73,24 @@ if prompt := st.chat_input("Ask your coach anything..."):
 
     with st.chat_message("assistant"):
         st.markdown(response)
+
+if messages:
+
+    if st.button("End Session & Save"):
+
+        with st.spinner("Saving session..."):
+
+            summary = summarize_session(messages)
+
+            store_session_summary(
+                student_id=selected_student_id,
+                summary=summary
+            )
+
+        st.success("Session saved successfully!")
+
+        # Clear only this student's chat history
+        st.session_state.student_chats[selected_student_id] = []
+
+        st.rerun()
+    
