@@ -73,3 +73,16 @@ def get_session_summaries(student_id: str) -> str:
         summaries.append(item["memory"])
 
     return "\n\n---\n\n".join(summaries)
+
+def get_session_records(student_id):
+
+    results = client.search(
+        query="session summary",
+        user_id=student_id,
+        filters={
+            "type": "session_summary"
+        },
+        limit=20
+    )
+
+    return results

@@ -10,7 +10,11 @@ from data.student_data import (
 from memory.session_memory import (
     summarize_session,
     store_session_summary,
-    get_session_summaries
+)
+
+from storage.session_store import (
+    save_session,
+    get_sessions
 )
 
 st.set_page_config(
@@ -61,23 +65,59 @@ selected_student_id = student_options[selected_student]
 student = load_student(selected_student_id)
 
 st.sidebar.divider()
-
 st.sidebar.subheader("Previous Sessions")
 
 try:
 
-    previous_sessions = get_session_summaries(
-        selected_student_id
+    sessions = get_sessions(
+    selected_student_id
     )
 
-    st.sidebar.text_area(
-        label="Recent Session Summaries",
-        value=previous_sessions,
-        height=250,
-        disabled=True
-    )
+    sessions = list(reversed(sessions))
 
-except Exception:
+    if not sessions:
+
+        st.sidebar.info(
+            "No previous sessions found."
+        )
+
+    else:
+
+        for idx, session in enumerate(
+            sessions,
+            start=1
+        ):
+
+            with st.sidebar.expander(
+                f"Session {idx}"
+            ):
+
+                for msg in session["messages"]:
+
+                    role = msg["role"]
+
+                    if role == "user":
+                        st.markdown(
+                            f"**👤 Student:** {msg['content']}"
+                        )
+                    else:
+                        st.markdown(
+                            f"**🤖 Coach:** {msg['content']}"
+                        )
+
+                    st.divider()
+
+                if st.button(
+                    "Open Session",
+                    key=f"open_session_{idx}"
+                ):
+                    st.session_state.student_chats[
+                        selected_student_id
+                    ] = session["messages"].copy()
+
+                    st.rerun()
+
+except Exception as e:
 
     st.sidebar.info(
         "No previous sessions found."
@@ -167,6 +207,11 @@ if messages:
     if st.button("End Session & Save"):
 
         with st.spinner("Saving session..."):
+
+            save_session(
+            selected_student_id,
+            messages
+            )
 
             store_facts_from_conversation(
                 student_id=selected_student_id,
