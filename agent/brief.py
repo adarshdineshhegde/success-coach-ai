@@ -5,10 +5,20 @@ from data.student_data import load_student, get_student_context
 from memory.factual_memory import get_relevant_facts
 from memory.session_memory import get_session_summaries
 
-llm = ChatOpenAI(model="gpt-5.4-mini-2026-03-17", temperature=0.3)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
 
 BRIEF_PROMPT = """You are preparing a success coach for an upcoming session with a student.
 Generate a pre-meeting brief from the context below.
+
+CRITICAL: If the factual memory or past sessions mention anything related to the
+student's emotional or mental wellbeing — depression, anxiety, stress, burnout,
+feeling overwhelmed, family pressure, sleep issues, or similar — this MUST be
+surfaced explicitly and prominently. Never omit it, never bury it under academic
+details, and never let it get pushed out by routine concerns like a low score or
+missed class. If such a concern was mentioned, lead the OPEN CONCERNS section with
+it clearly, in the student's own context, even if it seems like it may have been
+addressed already. The coach must never walk in unaware of a wellbeing concern this
+student has previously raised.
 
 Output exactly these sections:
 
@@ -16,14 +26,19 @@ CURRENT SITUATION
 2-3 sentences on academic standing — scores, attendance, anything flagged.
 
 OPEN CONCERNS
-Bullet points of unresolved issues from past sessions or memory. If none, say "Nothing outstanding."
+Wellbeing concerns (if any) come first, stated plainly. Then bullet points of other
+unresolved issues from past sessions or memory. If there are truly no concerns of
+any kind, say "Nothing outstanding."
 
 CONVERSATION STARTERS
 2-3 specific, natural opening questions the coach could use, grounded in what this
 student has actually shared before. Not generic ("how are you?") — specific
 ("Last time you mentioned recursion was clicking better, did that continue?").
+If a wellbeing concern was raised previously, at least one starter should give the
+coach a natural, caring way to check in on it directly.
 
-Keep the whole brief readable in under 30 seconds. No filler."""
+Keep the whole brief readable in under 30 seconds. No filler — except never compress
+or skip a wellbeing concern for the sake of brevity."""
 
 
 def generate_brief(student_id: str) -> str:
@@ -33,7 +48,10 @@ def generate_brief(student_id: str) -> str:
     """
     student = load_student(student_id)
     student_context = get_student_context(student)
-    facts = get_relevant_facts(student_id, "general history and patterns")
+    facts = get_relevant_facts(
+        student_id,
+        "wellbeing emotional state stress anxiety mental health struggles concerns patterns preferences"
+    )
     sessions = get_session_summaries(student_id)
 
     context = (

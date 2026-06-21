@@ -1,5 +1,6 @@
 from agent.planner_tools import get_pending_signals
 from calendar_integration.google_calendar import create_event
+from datetime import date
 
 TIME_SLOTS = [
     "09:00",
@@ -18,6 +19,8 @@ END_TIMES = [
     "14:45",
     "15:45"
 ]
+
+MAX_SESSIONS = 6
 
 def generate_reason(signal):
 
@@ -67,6 +70,12 @@ def generate_daily_plan():
 
     for i, signal in enumerate(signals):
 
+        if i >= MAX_SESSIONS:
+            deferred.append({
+                "student_name": signal["student_name"],
+                "reason": "No slots available today"
+            })
+            continue
         if i < len(TIME_SLOTS):
 
             if signal["severity"] == "high":
@@ -92,7 +101,7 @@ def generate_daily_plan():
 
             create_event(
                 title=f"Success Coach Session - {signal['student_name']}",
-                date="2026-06-22",
+                date=str(date.today()),
                 start_time=TIME_SLOTS[i],
                 end_time=END_TIMES[i],
                 description=reason

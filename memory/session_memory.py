@@ -1,6 +1,12 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from memory.signals import generate_and_store_signals
+import streamlit as st
+
+from agent.reconciler import (
+    reconcile_new_signal,
+    apply_reconciliation
+)
 
 from memory.mem0_client import client
 
@@ -97,6 +103,47 @@ def end_session(student_id: str, student_name: str, messages: list) -> tuple:
     
     # 3. extract and store signals
     signals = generate_and_store_signals(student_id, student_name, summary)
+
+    if "daily_plan" in st.session_state:
+
+        for sig in signals:
+
+            if (
+                sig["severity"] == "high"
+                and
+                sig["urgency"] == "today"
+            ):
+
+                action = reconcile_new_signal(
+                    st.session_state.daily_plan,
+                    sig,
+                    6
+                )
+
+                if action["action"] == "conflict":
+
+                    st.session_state.setdefault(
+                        "pending_conflicts",
+                        []
+                    ).append(action)
+
+                else:
+
+                    updated_plan, summary = (
+                        apply_reconciliation(
+                            st.session_state.daily_plan,
+                            action
+                        )
+                    )
+
+                    st.session_state.daily_plan = (
+                        updated_plan
+                    )
+
+                    st.session_state.setdefault(
+                        "plan_changes",
+                        []
+                    ).append(summary)
     
     return summary, signals
 

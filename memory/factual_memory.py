@@ -19,16 +19,14 @@ def store_facts_from_conversation(student_id, messages):
 
 
 def get_relevant_facts(student_id, query):
-
     results = client.search(
         query=query,
         user_id=student_id,
-        limit=5
+        filters={"type": "factual"},
+        limit=8
     )
-
     if not results:
         return "No prior facts."
-
     return "\n".join(
         f"- {memory['memory']}"
         for memory in results

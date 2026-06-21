@@ -41,6 +41,164 @@ with st.spinner("Loading signals..."):
 # filter out resolved signals before anything else uses all_signals
 all_signals = [s for s in all_signals if not s.get("acted_on")]
 
+
+# ---------------------------------------------------
+# M9 - PLAN CHANGES
+# ---------------------------------------------------
+
+if st.session_state.get("plan_changes"):
+
+    with st.expander(
+        "📋 What changed in today's plan",
+        expanded=True
+    ):
+
+        for change in st.session_state.plan_changes:
+
+            st.markdown(
+                f"- {change}"
+            )
+
+    st.divider()
+
+# ---------------------------------------------------
+# M9 - CONFLICTS REQUIRING COACH DECISION
+# ---------------------------------------------------
+
+if st.session_state.get("pending_conflicts"):
+
+    st.error(
+        "⚠️ Scheduling conflict detected. Coach decision required."
+    )
+
+    for idx, conflict in enumerate(
+        st.session_state.pending_conflicts
+    ):
+
+        with st.container(border=True):
+
+            st.markdown(
+                f"**{conflict['tradeoff_explanation']}**"
+            )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                st.markdown(
+                    f"### New Student\n"
+                    f"**{conflict['new_student']['name']}**"
+                )
+
+                st.caption(
+                    f"{conflict['new_student']['severity']} | "
+                    f"{conflict['new_student']['urgency']}"
+                )
+
+                st.write(
+                    conflict['new_student']['concern']
+                )
+
+                if st.button(
+                    f"Give slot to {conflict['new_student']['name']}",
+                    key=f"new_{idx}"
+                ):
+
+                    plan = st.session_state.daily_plan
+
+                    existing = conflict["existing_student"]
+                    new_student = conflict["new_student"]
+
+                    plan["today"] = [
+                        s
+                        for s in plan["today"]
+                        if not (
+                            s["student_name"] == existing["name"]
+                            and
+                            s["time_slot"] == existing["time_slot"]
+                        )
+                    ]
+
+                    plan.setdefault(
+                        "deferred",
+                        []
+                    ).append({
+                        "student_name": existing["name"],
+                        "reason": "Replaced by higher-priority student"
+                    })
+
+                    plan["today"].append({
+                        "student_name": new_student["name"],
+                        "time_slot": existing["time_slot"],
+                        "session_type": "Crisis Session",
+                        "severity": new_student["severity"],
+                        "reason": new_student["concern"]
+                    })
+
+                    st.session_state.setdefault(
+                        "plan_changes",
+                        []
+                    ).append(
+                        f"{new_student['name']} replaced "
+                        f"{existing['name']} at "
+                        f"{existing['time_slot']} due to higher-priority signal."
+                    )
+
+                    st.session_state.pending_conflicts.pop(idx)
+
+                    st.session_state.daily_plan = plan
+
+                    st.rerun()
+
+            with col2:
+
+                st.markdown(
+                    f"### Existing Student\n"
+                    f"**{conflict['existing_student']['name']}**"
+                )
+
+                st.caption(
+                    f"Scheduled at "
+                    f"{conflict['existing_student']['time_slot']}"
+                )
+
+                st.write(
+                    conflict['existing_student']['concern']
+                )
+
+                if st.button(
+                    f"Keep {conflict['existing_student']['name']}",
+                    key=f"keep_{idx}"
+                ):
+
+                    plan = st.session_state.daily_plan
+
+                    plan.setdefault(
+                        "deferred",
+                        []
+                    ).append({
+                        "student_name":
+                            conflict["new_student"]["name"],
+                        "reason":
+                            "Coach chose to keep existing scheduled student"
+                    })
+
+                    st.session_state.setdefault(
+                        "plan_changes",
+                        []
+                    ).append(
+                        f"{conflict['new_student']['name']} "
+                        f"was deferred after coach decision."
+                    )
+
+                    st.session_state.pending_conflicts.pop(idx)
+
+                    st.session_state.daily_plan = plan
+
+                    st.rerun()
+
+    st.divider()
+
 # ---------------------------------------------------
 # PLAN GENERATION SECTION
 # ---------------------------------------------------
