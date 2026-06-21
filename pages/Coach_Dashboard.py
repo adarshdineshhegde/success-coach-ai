@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 from data.student_data import get_all_students
 from agent.planner import generate_daily_plan
+from agent.brief import generate_brief
 from memory.signals import (
     get_all_signals,
     mark_signal_complete
@@ -86,6 +87,40 @@ if "daily_plan" in st.session_state:
 
     else:
         st.info("No deferred students.")
+
+st.divider()
+
+# ---------------------------------------------------
+# PRE-MEETING BRIEF SECTION
+# ---------------------------------------------------
+
+st.subheader("Pre-Meeting Brief")
+
+if students:
+
+    student_options = {s["name"]: s["student_id"] for s in students}
+
+    selected_name = st.selectbox(
+        "Select a student",
+        student_options.keys(),
+        key="brief_student_select"
+    )
+
+    if st.button("Generate Brief"):
+
+        with st.spinner("Preparing brief..."):
+            brief = generate_brief(student_options[selected_name])
+
+        st.session_state.current_brief = brief
+        st.session_state.current_brief_student = selected_name
+
+    if "current_brief" in st.session_state:
+
+        st.markdown(f"**Brief for {st.session_state.current_brief_student}**")
+        st.markdown(st.session_state.current_brief)
+
+else:
+    st.info("No students found.")
 
 st.divider()
 
