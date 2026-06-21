@@ -4,6 +4,8 @@ from memory.mem0_client import client
 from datetime import date
 import json
 
+print("USING MEMORY/SIGNALS.PY")
+
 llm = ChatOpenAI(model="gpt-5.4-mini-2026-03-17", temperature=0)
 
 SIGNAL_PROMPT = SIGNAL_PROMPT = """
@@ -160,6 +162,7 @@ SESSION SUMMARY:
 """
 
 
+
 def extract_signals(session_summary: str) -> list[dict]:
     """Run the summary through the LLM and extract structured signals."""
     response = llm.invoke([
@@ -233,25 +236,28 @@ def get_all_signals(students: list[dict]) -> list[dict]:
                 limit=10
             )
 
+            print("\nRAW MEM0 RESULTS:")
             for r in results:
+                print(r)
+
+            for r in results:
+
                 metadata = r.get("metadata", {})
 
                 if metadata.get("type") != "signal":
                     continue
 
-                # deduplicate on student + concern text
-                dedup_key = (student_id, r.get("memory", ""))
-                if dedup_key in seen:
+                if metadata.get("acted_on") is True:
                     continue
-                seen.add(dedup_key)
 
                 all_signals.append({
+                    "memory_id":    r.get("id"),
                     "student_id":   student_id,
                     "student_name": student_name,
                     "concern":      r.get("memory", ""),
                     "severity":     metadata.get("severity", "medium"),
                     "urgency":      metadata.get("urgency", "tomorrow"),
-                    "session_date": metadata.get("session_date", ""),
+                    "session_date": metadata.get("session_date", "")
                 })
 
         except Exception:
@@ -266,3 +272,18 @@ def get_all_signals(students: list[dict]) -> list[dict]:
     ))
 
     return all_signals
+
+def mark_signal_complete(memory_id: str):
+
+    memory = client.get(memory_id)
+
+    metadata = memory.get("metadata", {})
+
+    metadata["acted_on"] = True
+
+    client.update(
+        memory_id=memory_id,
+        data={
+            "metadata": metadata
+        }
+    )
