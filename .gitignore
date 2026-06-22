@@ -1,9 +1,0 @@
-.env
-venv/
-__pycache__/
-*.pyc
-chroma_db/
-credentials.json
-token.json
-service_account.json
-storage/sessions.json
